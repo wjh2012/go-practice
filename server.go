@@ -9,7 +9,8 @@ func main() {
 	app := fiber.New()
 
 	app.Get("/", hello)
-	app.Post("/upload", hello)
+	app.Post("/upload", uploadData)
+	app.Post("/upload2", uploadHandler)
 
 	app.Listen(":3000")
 }
@@ -36,9 +37,6 @@ func uploadData(c *fiber.Ctx) error {
 
 // Handler
 func uploadHandler(c *fiber.Ctx) error {
-	// 문자열 필드 받기 (예: 텍스트 필드명은 "description")
-	description := c.FormValue("description")
-	fmt.Println("Description:", description)
 
 	// 파일 받기 (예: 파일 필드명은 "image")
 	file, err := c.FormFile("image")
@@ -52,6 +50,10 @@ func uploadHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error saving file")
 	}
+
+	// 문자열 필드 받기 (예: 텍스트 필드명은 "description")
+	description := c.FormValue("description")
+	fmt.Println("Description:", description)
 
 	return c.SendString("File uploaded successfully with description: " + description)
 }

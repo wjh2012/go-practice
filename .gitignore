@@ -1,0 +1,45 @@
+# Executable files
+*.exe
+*.out
+*.a
+
+# Go build artifacts
+/build/
+/dist/
+*.o
+*.so
+*.dll
+
+# Dependency directories
+/vendor/
+
+# Cache directories and files
+/.cache
+*.log
+*.test
+coverage.out
+*.prof
+*.cov
+
+# Local environment files
+.env
+.env.*
+
+# IDE specific files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.swp
+*.bak
+*.old
+
+# Fiber specific (if any temporary data or other server state)
+fiber.lock

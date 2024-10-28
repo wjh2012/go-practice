@@ -12,7 +12,7 @@ func main() {
 	app.Post("/upload", uploadData)
 	app.Post("/upload2", uploadHandler)
 
-	app.Listen(":3000")
+	app.Listen(":1010")
 }
 
 // Handler

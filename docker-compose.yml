@@ -1,0 +1,23 @@
+services:
+  go-fiber:
+    container_name: ${CONTAINER_NAME}
+    environment:
+      TZ: Asia/Seoul
+    build:
+      context: ${CONTEXT_PATH}
+      dockerfile: Dockerfile
+      args:
+        APP_DIR: ${WORK_DIR}
+        APP_PORT: ${INTERNAL_PORT}
+
+    ports:
+      - ${EXPOSED_PORT}:${INTERNAL_PORT}
+    volumes:
+      - .:${WORK_DIR}
+    networks:
+      - custom_network
+
+networks:
+  custom_network:
+    driver: bridge
+    name: ${NETWORK_NAME}

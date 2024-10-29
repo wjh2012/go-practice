@@ -22,7 +22,7 @@ coverage.out
 *.cov
 
 # Local environment files
-
+/go1*
 # IDE specific files
 .idea/
 .vscode/

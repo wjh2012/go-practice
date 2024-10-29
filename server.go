@@ -3,84 +3,114 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 )
 
 func main() {
-	app := fiber.New()
+	http.HandleFunc("/", hello)
+	http.HandleFunc("/upload", uploadData)
+	http.HandleFunc("/upload2", uploadHandler)
 
-	app.Get("/", hello)
-	app.Post("/upload", uploadData)
-	app.Post("/upload2", uploadHandler)
-
-	app.Listen(":1010")
+	fmt.Println("Server is running on port 1010...")
+	http.ListenAndServe(":1010", nil)
 }
 
-// Handler
-func hello(c *fiber.Ctx) error {
-	return c.SendString("Hello, World!")
+// 기본 핸들러
+func hello(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Hello, World!"))
 }
 
-func uploadData(c *fiber.Ctx) error {
-	file, err := c.FormFile("file")
+// 파일 업로드 핸들러
+func uploadData(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	file, _, err := r.FormFile("file")
 	if err != nil {
-		return err
+		http.Error(w, "Failed to upload file", http.StatusBadRequest)
+		return
 	}
-
-	if _, err := os.Stat("./uploads"); os.IsNotExist(err) {
-		err := os.Mkdir("./uploads", os.ModePerm)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Failed to create directory")
-		}
-	}
-
-	destination := fmt.Sprintf("./uploads/%s", file.Filename)
-	if err := c.SaveFile(file, destination); err != nil {
-		return err
-	}
-	return c.SendString("File uploaded successfully with description")
-}
-
-// Handler
-func uploadHandler(c *fiber.Ctx) error {
-	// 파일 받기
-	file, err := c.FormFile("image")
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Failed to upload image")
-	}
+	defer file.Close()
 
 	// 디렉토리 확인 및 생성
 	if _, err := os.Stat("./uploads"); os.IsNotExist(err) {
 		err := os.Mkdir("./uploads", os.ModePerm)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Failed to create directory")
+			http.Error(w, "Failed to create directory", http.StatusInternalServerError)
+			return
 		}
 	}
 
 	// 파일 저장
-	savePath := "./uploads/" + file.Filename
-	err = c.SaveFile(file, savePath)
+	destination := "./uploads/uploaded_file"
+	out, err := os.Create(destination)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Error saving file")
+		http.Error(w, "Failed to save file", http.StatusInternalServerError)
+		return
+	}
+	defer out.Close()
+	io.Copy(out, file)
+
+	w.Write([]byte("File uploaded successfully"))
+}
+
+// 파일 및 JSON 저장 핸들러
+func uploadHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
 	}
 
+	// 파일 받기
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		http.Error(w, "Failed to upload image", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// 디렉토리 확인 및 생성
+	if _, err := os.Stat("./uploads"); os.IsNotExist(err) {
+		err := os.Mkdir("./uploads", os.ModePerm)
+		if err != nil {
+			http.Error(w, "Failed to create directory", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// 이미지 파일 저장
+	savePath := "./uploads/" + header.Filename
+	out, err := os.Create(savePath)
+	if err != nil {
+		http.Error(w, "Error saving file", http.StatusInternalServerError)
+		return
+	}
+	defer out.Close()
+	io.Copy(out, file)
+
 	// 문자열 필드 받기
-	description := c.FormValue("description")
+	description := r.FormValue("description")
 
 	// JSON 데이터 생성
 	data := map[string]string{"description": description}
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to encode JSON")
+		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
+		return
 	}
 
 	// JSON 파일 저장
 	jsonPath := "./uploads/description.json"
 	err = os.WriteFile(jsonPath, jsonData, 0644)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to save JSON file")
+		http.Error(w, "Failed to save JSON file", http.StatusInternalServerError)
+		return
 	}
 
 	fmt.Println("Description:", description)
-	return c.SendString("File uploaded successfully with description: " + description)
+	w.Write([]byte("File uploaded successfully with description: " + description))
 }

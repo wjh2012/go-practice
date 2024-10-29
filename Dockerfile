@@ -18,7 +18,7 @@ RUN go mod download
 
 # 소스 코드를 복사하고 빌드
 COPY . .
-RUN go build -o app
+RUN go build -o app -buildvcs=false
 
 # 애플리케이션 실행
 CMD sh -c "/app/app || (echo 'Application failed, keeping container alive' && sleep infinity)"

@@ -1,8 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/gofiber/fiber/v2"
+	"os"
 )
 
 func main() {
@@ -23,37 +24,63 @@ func hello(c *fiber.Ctx) error {
 func uploadData(c *fiber.Ctx) error {
 	file, err := c.FormFile("file")
 	if err != nil {
-		// Handle error
 		return err
 	}
+
+	if _, err := os.Stat("./uploads"); os.IsNotExist(err) {
+		err := os.Mkdir("./uploads", os.ModePerm)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to create directory")
+		}
+	}
+
 	destination := fmt.Sprintf("./uploads/%s", file.Filename)
 	if err := c.SaveFile(file, destination); err != nil {
-		// Handle error
 		return err
 	}
 	return c.SendString("File uploaded successfully with description")
-
 }
 
 // Handler
 func uploadHandler(c *fiber.Ctx) error {
-
-	// 파일 받기 (예: 파일 필드명은 "image")
+	// 파일 받기
 	file, err := c.FormFile("image")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString("Failed to upload image")
 	}
 
-	// 이미지 파일을 바로 지정한 경로에 저장 (예: ./uploads/ 디렉토리)
+	// 디렉토리 확인 및 생성
+	if _, err := os.Stat("./uploads"); os.IsNotExist(err) {
+		err := os.Mkdir("./uploads", os.ModePerm)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to create directory")
+		}
+	}
+
+	// 파일 저장
 	savePath := "./uploads/" + file.Filename
 	err = c.SaveFile(file, savePath)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error saving file")
 	}
 
-	// 문자열 필드 받기 (예: 텍스트 필드명은 "description")
+	// 문자열 필드 받기
 	description := c.FormValue("description")
-	fmt.Println("Description:", description)
 
+	// JSON 데이터 생성
+	data := map[string]string{"description": description}
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to encode JSON")
+	}
+
+	// JSON 파일 저장
+	jsonPath := "./uploads/description.json"
+	err = os.WriteFile(jsonPath, jsonData, 0644)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to save JSON file")
+	}
+
+	fmt.Println("Description:", description)
 	return c.SendString("File uploaded successfully with description: " + description)
 }

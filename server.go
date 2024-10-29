@@ -22,10 +22,24 @@ func hello(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Hello, World!"))
 }
 
+// 디렉토리 생성 함수
+func ensureUploadDir() error {
+	if _, err := os.Stat("./uploads"); os.IsNotExist(err) {
+		return os.Mkdir("./uploads", os.ModePerm)
+	}
+	return nil
+}
+
 // 파일 업로드 핸들러
 func uploadData(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// 디렉토리 확인 및 생성
+	if err := ensureUploadDir(); err != nil {
+		http.Error(w, "Failed to create directory", http.StatusInternalServerError)
 		return
 	}
 
@@ -35,15 +49,6 @@ func uploadData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-
-	// 디렉토리 확인 및 생성
-	if _, err := os.Stat("./uploads"); os.IsNotExist(err) {
-		err := os.Mkdir("./uploads", os.ModePerm)
-		if err != nil {
-			http.Error(w, "Failed to create directory", http.StatusInternalServerError)
-			return
-		}
-	}
 
 	// 파일 저장
 	destination := "./uploads/uploaded_file"
@@ -65,6 +70,12 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 디렉토리 확인 및 생성
+	if err := ensureUploadDir(); err != nil {
+		http.Error(w, "Failed to create directory", http.StatusInternalServerError)
+		return
+	}
+
 	// 파일 받기
 	file, header, err := r.FormFile("image")
 	if err != nil {
@@ -72,15 +83,6 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-
-	// 디렉토리 확인 및 생성
-	if _, err := os.Stat("./uploads"); os.IsNotExist(err) {
-		err := os.Mkdir("./uploads", os.ModePerm)
-		if err != nil {
-			http.Error(w, "Failed to create directory", http.StatusInternalServerError)
-			return
-		}
-	}
 
 	// 이미지 파일 저장
 	savePath := "./uploads/" + header.Filename

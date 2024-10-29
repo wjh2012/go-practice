@@ -20,4 +20,4 @@ RUN go build -o app
 EXPOSE ${APP_PORT}
 
 # 애플리케이션 실행
-CMD ["/app/app"]
+CMD ["./app"]

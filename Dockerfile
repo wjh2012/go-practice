@@ -5,6 +5,10 @@ ARG APP_DIR
 ARG APP_PORT
 ARG DEBIAN_FRONTEND=noninteractive
 
+ENV TZ=Asia/Seoul
+
+EXPOSE ${APP_PORT}
+
 # 작업 디렉토리 설정
 WORKDIR ${APP_DIR}
 
@@ -16,8 +20,5 @@ RUN go mod download
 COPY . .
 RUN go build -o app
 
-# 애플리케이션 포트 오픈
-EXPOSE ${APP_PORT}
-
 # 애플리케이션 실행
-CMD ["sh", "-c", "/app/app"]
+CMD sh -c "/app/app || (echo 'Application failed, keeping container alive' && sleep infinity)"
